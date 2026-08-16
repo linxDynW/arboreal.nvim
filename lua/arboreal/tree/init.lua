@@ -16,6 +16,7 @@ local col = state.col
 local fallback = state.fallback
 local current_opts = state.current_opts
 local tree_map = keys.tree_map
+local global_map = keys.global_map
 local notify = notify_mod.notify
 local notify_blocked = notify_mod.blocked
 local char_len_at = context.char_len_at
@@ -35,6 +36,7 @@ function M.refresh(focus_line, clamp_cursor)
   local lines = get_lines()
   local r = row()
   local model = detect.detect(lines, r, current_opts())
+  M.sync_mappings(model)
   if not model then
     return
   end
@@ -77,13 +79,44 @@ function M.refresh(focus_line, clamp_cursor)
   end
 end
 
+function M.sync_mappings(model)
+  if model == nil then
+    model = detect.detect(get_lines(), row(), current_opts())
+  end
+  local active = vim.b.arboreal_mappings_active
+  if enabled() and model then
+    if not active then
+      keys.apply_buffer(0)
+      vim.b.arboreal_mappings_active = true
+    end
+  elseif active then
+    keys.clear_buffer(0)
+    vim.b.arboreal_mappings_active = false
+  end
+end
+
+function M.clear_mappings()
+  keys.clear_buffer(0)
+  vim.b.arboreal_mappings_active = false
+end
+
 function M.toggle()
   vim.b.arboreal_enabled = vim.b.arboreal_enabled == false
+  if vim.b.arboreal_enabled then
+    M.sync_mappings()
+  else
+    M.clear_mappings()
+  end
   notify(vim.b.arboreal_enabled and "tree editing enabled" or "tree editing disabled (plain text)")
 end
 
 function M.set_enabled(on)
   vim.b.arboreal_enabled = on and true or false
+  if on then
+    M.sync_mappings()
+  else
+    M.clear_mappings()
+  end
   notify(on and "tree editing enabled" or "tree editing disabled (plain text)")
 end
 
@@ -102,6 +135,9 @@ end
 
 function M.setup_mappings()
   notify_mod.reset_throttle()
+  keys.clear_buffer(0)
+  vim.b.arboreal_mappings_active = false
+  keys.reset()
   local group = vim.api.nvim_create_augroup("ArborealTree", { clear = true })
 
   vim.api.nvim_create_autocmd({ "CursorMovedI", "TextChangedI", "InsertEnter" }, {
@@ -129,6 +165,24 @@ function M.setup_mappings()
         return
       end
       M.refresh(nil, false)
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ "CursorMoved", "BufEnter", "WinEnter" }, {
+    group = group,
+    callback = function()
+      if not enabled() then
+        M.clear_mappings()
+        return
+      end
+      M.sync_mappings()
+    end,
+  })
+
+  vim.api.nvim_create_autocmd("BufLeave", {
+    group = group,
+    callback = function(event)
+      keys.clear_buffer(event.buf)
     end,
   })
 
@@ -175,7 +229,7 @@ function M.setup_mappings()
 
   local insert_key = cfg().insert_key
   if insert_key then
-    tree_map("n", insert_key, function()
+    global_map("n", insert_key, function()
       local r = row()
       local nl = edit.insert_marker(get_lines(), r, current_opts())
       if not nl then
@@ -191,8 +245,10 @@ function M.setup_mappings()
 
   local toggle_key = cfg().toggle_key
   if toggle_key then
-    tree_map("n", toggle_key, M.toggle, { desc = "Arboreal: toggle tree editing" })
+    global_map("n", toggle_key, M.toggle, { desc = "Arboreal: toggle tree editing" })
   end
+
+  M.sync_mappings()
 end
 
 return M

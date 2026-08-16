@@ -90,6 +90,9 @@ Live editing is enabled by default inside a well-formed tree.
 
 Malformed trees are left to normal editing. The root line is plain text.
 
+Tree mappings are buffer-local and are active only while the cursor is in a
+tree, so user mappings outside trees are not overridden.
+
 ==============================================================================
 4. Configuration                                                 *arboreal-config*
 

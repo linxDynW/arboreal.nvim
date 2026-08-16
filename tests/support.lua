@@ -26,11 +26,18 @@ function M.set_lines(lines)
 end
 
 function M.keys(s)
+  pcall(require, "arboreal.tree")
+  pcall(function()
+    require("arboreal.tree").sync_mappings()
+  end)
   vim.fn.feedkeys(vim.api.nvim_replace_termcodes(s, true, false, true), "xt")
 end
 
 function M.cursor(l, c)
   vim.api.nvim_win_set_cursor(0, { l, c })
+  pcall(function()
+    require("arboreal.tree").sync_mappings()
+  end)
 end
 
 function M.setup_toggle(on)

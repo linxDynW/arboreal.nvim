@@ -9,6 +9,25 @@ local cursor = t.cursor
 local setup_toggle = t.setup_toggle
 local TREE = t.TREE
 
+test("buffer-local visual > wins over a global user mapping", function()
+  setup_toggle(true)
+  set_lines({ "src", "├── a", "└── b", "    └── y" })
+  cursor(3, 0)
+  vim.keymap.set("x", ">", ">gv", { desc = "user indent" })
+  keys("Vj><Esc>")
+  local r = buf_lines()
+  assert(
+    r[1] == "src"
+      and r[2] == "└── a"
+      and r[3] == "    └── b"
+      and r[4] == "        └── y",
+    table.concat(r, "|")
+  )
+  vim.keymap.del("x", ">")
+  vim.b.arboreal_mappings_active = false
+  require("arboreal.tree").sync_mappings()
+end)
+
 test("visual > moves subtree deeper", function()
   setup_toggle(true)
   set_lines({ "src", "├── a", "└── b", "    └── y" })

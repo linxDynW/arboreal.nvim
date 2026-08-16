@@ -127,6 +127,9 @@ Live editing is enabled by default. Inside a well-formed tree:
 Malformed trees are left to normal editing. The root line is plain text: indent,
 delete, or edit it freely; the tree body stays valid.
 
+Tree mappings are buffer-local and are active only while the cursor is in a
+tree. Outside trees your own `>`, `d`, `p`, and similar mappings are untouched.
+
 ## Configuration
 
 ```lua
