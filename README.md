@@ -26,7 +26,48 @@ With lazy.nvim / LazyVim:
 ```lua
 {
   "linxDynW/arboreal.nvim",
-  keys = { { "<leader>at", mode = "x" } },
+  cmd = { "Arb", "ArborealConvert" },
+  keys = {
+    { "<leader>at", mode = "x", desc = "Convert selection to tree" },
+  },
+  event = "VeryLazy",
+  opts = {},
+}
+```
+
+`cmd` makes `:Arb` and `:ArborealConvert` available before the plugin is
+loaded, `keys` keeps the default visual mapping lazy, and `event = "VeryLazy"`
+registers live-editing autocmds and mappings after startup without blocking it.
+
+To load even later, replace `event = "VeryLazy"` with content detection. The
+plugin is then loaded the first time a buffer starts with tree connectors
+(`├`, `└`, or `│`), or when a command/key triggers it:
+
+```lua
+{
+  "linxDynW/arboreal.nvim",
+  name = "arboreal.nvim",
+  cmd = { "Arb", "ArborealConvert" },
+  keys = {
+    { "<leader>at", mode = "x", desc = "Convert selection to tree" },
+  },
+  init = function()
+    vim.api.nvim_create_autocmd("BufReadPost", {
+      group = vim.api.nvim_create_augroup("ArborealLazyLoad", { clear = true }),
+      callback = function()
+        if pcall(require, "arboreal") then
+          return
+        end
+        local lines = vim.api.nvim_buf_get_lines(0, 0, 200, false)
+        for _, line in ipairs(lines) do
+          if line:match("^%s*[├└│]") then
+            require("lazy").load({ plugins = { "arboreal.nvim" } })
+            break
+          end
+        end
+      end,
+    })
+  end,
   opts = {},
 }
 ```

@@ -31,6 +31,27 @@ becomes: ~
         └── a.rs
 
 ==============================================================================
+INSTALLATION                                                  *arboreal-install*
+
+With lazy.nvim, keep :Arb commands and the default mapping lazy while enabling
+live editing after startup:
+
+>lua
+    {
+      "linxDynW/arboreal.nvim",
+      cmd = { "Arb", "ArborealConvert" },
+      keys = {
+        { "<leader>at", mode = "x", desc = "Convert selection to tree" },
+      },
+      event = "VeryLazy",
+      opts = {},
+    }
+<
+
+For the maximally lazy variant, see the README: an `init` autocmd can load the
+plugin when the current buffer contains tree connectors.
+
+==============================================================================
 2. Commands                                                         *arboreal-cmd*
 
 :Arb c                          Convert a visual selection, or use a range
