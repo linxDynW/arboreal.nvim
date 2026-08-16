@@ -39,6 +39,12 @@ With lazy.nvim / LazyVim:
 loaded, `keys` keeps the default visual mapping lazy, and `event = "VeryLazy"`
 registers live-editing autocmds and mappings after startup without blocking it.
 
+**Startup behavior:** live editing only exists after the plugin has been loaded.
+`:Arb on` is a lazy-loader command stub, so if a tree buffer does not activate
+live editing (for example, the tree starts after the detection window below),
+run `:Arb on`. The same applies when a plugin manager does not load arboreal
+automatically: `:Arb on` always loads and enables it.
+
 To load even later, replace `event = "VeryLazy"` with content detection. The
 plugin is then loaded the first time a buffer starts with tree connectors
 (`├`, `└`, or `│`), or when a command/key triggers it:

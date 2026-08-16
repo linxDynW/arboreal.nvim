@@ -51,6 +51,10 @@ live editing after startup:
 For the maximally lazy variant, see the README: an `init` autocmd can load the
 plugin when the current buffer contains tree connectors.
 
+Before arboreal has been loaded, live-editing mappings do not exist. `:Arb on`
+is always available as a lazy-loader command, so running it will load the
+plugin and enable live editing even when automatic detection misses a buffer.
+
 ==============================================================================
 2. Commands                                                         *arboreal-cmd*
 
