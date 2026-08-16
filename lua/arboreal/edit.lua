@@ -33,6 +33,103 @@ function M.render_region(lines, at_line, focus_line, opts)
   return apply_entries(lines, model, entries, opts)
 end
 
+local function is_blank(line)
+  return line:match("^%s*$") ~= nil
+end
+
+local function shift_sparse_lines(lines, from_line, to_line, dir, opts)
+  local dense_to_orig = {}
+  local orig_to_dense = {}
+  local dense_lines = {}
+  for l = 1, #lines do
+    if not is_blank(lines[l]) then
+      dense_lines[#dense_lines + 1] = lines[l]
+      dense_to_orig[#dense_lines] = l
+      orig_to_dense[l] = #dense_lines
+    end
+  end
+
+  local first = nil
+  for l = from_line, to_line do
+    if not is_blank(lines[l]) then
+      first = l
+      break
+    end
+  end
+  if not first then
+    return nil
+  end
+
+  local model = detect.detect(dense_lines, orig_to_dense[first], opts)
+  if not model then
+    return nil
+  end
+
+  local function selected(node)
+    local original_line = dense_to_orig[node.line]
+    return original_line >= from_line and original_line <= to_line
+  end
+
+  local any = false
+  for _, node in ipairs(model.nodes) do
+    if selected(node) then
+      if node.level == 0 then
+        return nil
+      end
+      any = true
+    end
+  end
+  if not any then
+    return nil
+  end
+
+  local new_levels = {}
+  local prev_new = 0
+  for j = 1, #model.nodes do
+    local node = model.nodes[j]
+    local new_level = node.level
+    if selected(node) then
+      new_level = node.level + dir
+      if dir == 1 then
+        if node.level == 0 or new_level > prev_new + 1 then
+          return nil
+        end
+      elseif node.level <= 1 then
+        return nil
+      end
+      if node.is_dir and dir == -1 then
+        local next = model.nodes[j + 1]
+        if next and next.level > node.level and not selected(next) then
+          return nil
+        end
+      end
+    end
+    prev_new = new_level
+    new_levels[j] = new_level
+  end
+
+  local entries = {}
+  local margins = {}
+  for j = 1, #model.nodes do
+    entries[j] = { level = new_levels[j], name = model.nodes[j].name }
+    margins[j] = model.nodes[j].margin
+  end
+  local render_nodes = common.annotate(entries)
+  for j = 1, #render_nodes do
+    render_nodes[j].margin = margins[j]
+  end
+  local rendered = common.rebuild_nodes(render_nodes, opts)
+
+  local out = {}
+  for k = 1, #lines do
+    out[k] = lines[k]
+  end
+  for j = 1, #model.nodes do
+    out[dense_to_orig[model.nodes[j].line]] = rendered[j]
+  end
+  return out
+end
+
 --- Shift levels for every selected node (visual < and >).
 --- Atomic: validate the whole selection first. If any node violates the
 --- constraints (level jump, unselected children, level boundary), apply
@@ -45,11 +142,21 @@ end
 ---@return string[]? new_lines
 function M.shift_lines(lines, from_line, to_line, dir, opts)
   opts = resolve(opts)
-  local model = detect.detect(lines, from_line, opts)
-  if not model then
+  if dir ~= 1 and dir ~= -1 then
     return nil
   end
-  if dir ~= 1 and dir ~= -1 then
+  local has_blank = false
+  for l = from_line, to_line do
+    if is_blank(lines[l]) then
+      has_blank = true
+      break
+    end
+  end
+  if has_blank then
+    return shift_sparse_lines(lines, from_line, to_line, dir, opts)
+  end
+  local model = detect.detect(lines, from_line, opts)
+  if not model then
     return nil
   end
   local function selected(node)

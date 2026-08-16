@@ -48,22 +48,34 @@ function M.setup(ctx)
     vim.api.nvim_win_set_cursor(0, cur)
   end
 
-  -- Whether the selection consists entirely of body lines (root or non-tree lines mean plain text).
+  -- Whether the selection consists of body lines and blank lines
+  -- (root or non-tree lines mean plain text).
   local function selection_is_body(lines, from, to)
-    local model = detect.detect(lines, from, current_opts())
-    if not model then
-      return false
-    end
-    local in_range = 0
-    for _, n in ipairs(model.nodes) do
-      if n.line >= from and n.line <= to then
-        in_range = in_range + 1
-        if n.level == 0 then
+    local any = false
+    for l = from, to do
+      -- Blank lines are preserved by sparse shifting.
+      if not lines[l]:match("^%s*$") then
+        any = true
+        local model = detect.detect(lines, l, current_opts())
+        if not model then
+          return false
+        end
+        local found = false
+        for _, n in ipairs(model.nodes) do
+          if n.line == l then
+            found = true
+            if n.level == 0 then
+              return false
+            end
+            break
+          end
+        end
+        if not found then
           return false
         end
       end
     end
-    return in_range == to - from + 1
+    return any
   end
 
   local function shift_visual(dir, from, to)

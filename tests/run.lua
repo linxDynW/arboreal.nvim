@@ -674,6 +674,19 @@ test("shift_lines outdent leaf", function()
   )
 end)
 
+test("shift_lines preserves blank lines", function()
+  local lines = { "src", "└── a", "    ├── b", "", "    └── c" }
+  local nl = assert(edit.shift_lines(lines, 3, 5, -1))
+  assert(
+    nl[1] == "src"
+      and nl[2] == "├── a"
+      and nl[3] == "├── b"
+      and nl[4] == ""
+      and nl[5] == "└── c",
+    table.concat(nl, "|")
+  )
+end)
+
 test("shift_lines moves subtree deeper", function()
   local lines = { "src", "├── a", "└── b", "    └── y" }
   local nl = assert(edit.shift_lines(lines, 3, 4, 1))

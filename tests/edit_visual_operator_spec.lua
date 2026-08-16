@@ -36,6 +36,22 @@ test("visual < moves subtree back", function()
   )
 end)
 
+test("visual < preserves blank lines inside the selection", function()
+  setup_toggle(true)
+  set_lines({ "src", "└── a", "    ├── b", "", "    └── c" })
+  cursor(3, 0)
+  keys("V2j<<Esc>")
+  local r = buf_lines()
+  assert(
+    r[1] == "src"
+      and r[2] == "├── a"
+      and r[3] == "├── b"
+      and r[4] == ""
+      and r[5] == "└── c",
+    table.concat(r, "|")
+  )
+end)
+
 test("visual > blocked notifies and leaves buffer unchanged", function()
   setup_toggle(true)
   set_lines({ "src", "├── a", "└── b" })
