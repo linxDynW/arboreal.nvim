@@ -1,0 +1,88 @@
+*arboreal.txt*          Edit directory trees in your documents
+
+==============================================================================
+CONTENTS                                                            *arboreal*
+
+  1. Introduction ........................................... |arboreal-intro|
+  2. Commands ................................................ |arboreal-cmd|
+  3. Live editing ............................................ |arboreal-live|
+  4. Configuration ........................................... |arboreal-config|
+
+==============================================================================
+1. Introduction                                                   *arboreal-intro*
+
+arboreal.nvim converts plain indented lines into directory-tree diagrams and
+provides tree-aware live editing.
+
+Example: ~
+
+    src
+        main.rs
+        lib.rs
+        tests
+            a.rs
+
+becomes: ~
+
+    src
+    ├── main.rs
+    ├── lib.rs
+    └── tests
+        └── a.rs
+
+==============================================================================
+2. Commands                                                         *arboreal-cmd*
+
+:Arb c                          Convert a visual selection, or use a range
+                                like `:1,4Arb c`.
+:Arb i                          Mark the current line as a tree entry. The
+                                line above becomes the root.
+:Arb on                         Enable live tree editing.
+:Arb off                        Disable live tree editing.
+
+The default visual mapping is <Plug>(arboreal-convert), bound to
+`<leader>at` by setup() unless `convert_key = false`.
+
+==============================================================================
+3. Live editing                                                    *arboreal-live*
+
+Live editing is enabled by default inside a well-formed tree.
+
+    o / Enter                    New sibling after the current subtree.
+    Tab / Shift-Tab              Move one level deeper/shallower, bounded by
+                                 the at-most-one-level rule.
+    Backspace                    Delete the character before the cursor. Empty
+                                 leaves delete the whole line; empty
+                                 directories are protected.
+    dd                           Delete a node. Directory children merge into
+                                 the parent. Count deletes physical lines.
+    >> / <<                      Structurally shift [count] lines.
+    J / gJ                       Join the next node's name into the current
+                                 line.
+    d / c operators              Tree-aware inside trees, native elsewhere.
+    x r s C S D R                Blocked on connectors, native on names.
+                                 Block notices suggest `:Arb off`.
+
+Malformed trees are left to normal editing. The root line is plain text.
+
+==============================================================================
+4. Configuration                                                 *arboreal-config*
+
+>lua
+    require("arboreal").setup({
+      branch = "├──",
+      leaf = "└──",
+      pipe = "│",
+      indent = 4,
+      convert_key = "<leader>at",
+      insert_key = false,
+      toggle_key = false,
+      notify_on_limit = true,
+      confirm_directory_delete = true,
+      subtree_indent = false,
+    })
+<
+
+See |arboreal-cmd| and |arboreal-live| for the available commands and keys.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
